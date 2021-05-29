@@ -108,5 +108,21 @@ Este documento de entrega final de la Práctica 2 se debe entregar en el espacio
 
 
 ******
-# Enunciado  
+# Desarrollo de la práctica  
 ******
+
+## Introducción.
+
+Para el desarrollo de la práctica 2 de **Tipología y ciclo de vida de los datos** se ha seleccionado el dataset de Titanic expuesto en kaggle. Este dataset consta de dos ficheros .csv (test y train) en los que se encuentra recogida la información a cerca de los pasajeros del célebre crucero. Esta separación inicial está fundamentada por su objetivo de aplicar un modelo de predicción para determinar los supervivientes del accidente, de modo que uno de los conjuntos se emplee para el entrenamiento del modelo y el otro para ponerlo a prueba. Para nuestro estudio comenzaremos con lo que suponemos que formaría el conjunto original, de mode que uniremos los dos conjuntos en uno solo.
+
+## Carga de datos.
+
+
+## Descripción del dataset.
+
+## Preparación del dataset.
+
+## Análisis de los datos.
+
+## Conclusiones.
+

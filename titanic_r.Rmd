@@ -141,31 +141,20 @@ unique(train$Embarked)
 ```
 
 En este apartado se tratará de llevar a cabo una descripción detallada del conjunto de datos, con lo que se definirán los atributos del mismo, las proporciones y posibles valores de los mismos e información relevante para procesos posteriores. En primer lugar, los atributos del conjunto de datos:
+
 * Name: un atributo de tipo texto con el nombre del pasajero.
 * Sex: un atributo de tipo texto que especifica el género del pasajero. Puede tomar los valores: _male_, _female_.
-* Age: atributo numérico que determina la edad del pasajero. La edad de los bebés por debajo de 12 meses se representa como una fracción del tipo 1/_meses de vida_.
-* Pclass: un atributo de tipo numérico que representa la clase a la que pertenece el pasajero. Existen las clases: _1_, _2_ y _3_
-    
-embarked
-    a factor with the persons place of of embarkment.
-    
-country
-    a factor with the persons home country.
-    
-ticketno
-    a numeric value specifying the persons ticket number (NA for crew members).
-    
-fare
-    a numeric value with the ticket price (NA for crew members, musicians and employees of the shipyard company).
-    
-sibsp
-    an ordered factor specifying the number if siblings/spouses aboard; adopted from Vanderbild data set.
-    
-parch
-    an ordered factor specifying the number of parents/children aboard; adopted from Vanderbild data set.
-    
-survived
-    a factor with two levels (no and yes) specifying whether the person has survived the sinking.
+* Age: atributo numérico que determina la edad del pasajero. La edad de los bebés por debajo de 12 meses se representa como una fracción del tipo 1/_meses de vida_.En caso de tratarse de una edad estimada se representa con la forma _xx.5_.
+* Pclass: un atributo de tipo numérico que representa la clase a la que pertenece el pasajero. Existen las clases: _1_, _2_ y _3_ que coinciden con clase alta, clase media y clase baja respectivamente.
+* Embarked: atributo de tipo texto que determina la pasarela de embarque del pasajero.Toma los valores: _S_ (Southampton), _C_ (Cherbourg) y _Q_ (Queenstown).
+* Ticket: atributo de tipo texto con el código del billete del pasajero.
+* Fare: atributo numérico con el precio que ha pagado el pasajero. Entendemos aquellos valores de 0, como que el pasajero en cuestión es un empleado en la nave.
+* Sibsp: atributo numérico que especifica la cantidad de hermanos y/o cónyuges a bordo del barco.
+* Prch:  atributo numérico que especifica la cantidad de padres y/o hijos a bordo del barco.
+* Survived: atributo booleano que especifica si el pasajero ha sobrevivido al accidente o no. Se entiende _0_ como defunción y _1_ como supervivencia.
+* Cabin: atributo de tipo texto que especifica el camarote en el que reside el pasajero.
+
+Una vez definidos los atributos del conjunto, se procede a estudiar superficialmente los datos de modo que se puedan detectar ciertas tendencias o naturalezas.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 #Estadísticas básicas
@@ -176,6 +165,8 @@ colSums(is.na(train))
 colSums(train=="")
 
 ```
+
+
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Tomamos valor "Desconocido" para los valores vacíos de la variable "country"
 train$Embarked[train$country==""]="Desconocido"

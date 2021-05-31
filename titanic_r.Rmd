@@ -113,12 +113,76 @@ Este documento de entrega final de la Práctica 2 se debe entregar en el espacio
 
 ## Introducción.
 
-Para el desarrollo de la práctica 2 de **Tipología y ciclo de vida de los datos** se ha seleccionado el dataset de Titanic expuesto en kaggle. Este dataset consta de dos ficheros .csv (test y train) en los que se encuentra recogida la información a cerca de los pasajeros del célebre crucero. Esta separación inicial está fundamentada por su objetivo de aplicar un modelo de predicción para determinar los supervivientes del accidente, de modo que uno de los conjuntos se emplee para el entrenamiento del modelo y el otro para ponerlo a prueba. Para nuestro estudio comenzaremos con lo que suponemos que formaría el conjunto original, de mode que uniremos los dos conjuntos en uno solo.
+Para el desarrollo de la práctica 2 de **Tipología y ciclo de vida de los datos** se ha seleccionado el dataset de Titanic expuesto en kaggle. Este dataset consta de dos ficheros .csv (test y train) en los que se encuentra recogida la información a cerca de los pasajeros del célebre crucero. Esta separación inicial está fundamentada por su objetivo de aplicar un modelo de predicción para determinar los supervivientes del accidente, de modo que uno de los conjuntos se emplee para el entrenamiento del modelo y el otro para ponerlo a prueba. Para nuestro estudio emplearemos el conjunto de entrenamiento **train** puesto que es el que cuenta con la información relativa a la supervivencia de los pasajeros.
 
 ## Carga de datos.
 
+Se procede a llevar a cabo la carga de datos de **train.csv** y almacenarlos en forma de dataframe.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Cargamos los paquetes R que vamos a usar
+library(ggplot2)
+library(dplyr)
+
+# Cargamos el fichero de datos
+train <- read.csv('train.csv',stringsAsFactors = FALSE)
+# Verificamos la estructura del conjunto de datos
+str(train)
+```
 
 ## Descripción del dataset.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Comprobamos los distintos valores de los atributos que parecen ser categóricos
+unique(train$Pclass)
+unique(train$Survived)
+unique(train$Sex)
+unique(train$Embarked)
+```
+
+En este apartado se tratará de llevar a cabo una descripción detallada del conjunto de datos, con lo que se definirán los atributos del mismo, las proporciones y posibles valores de los mismos e información relevante para procesos posteriores. En primer lugar, los atributos del conjunto de datos:
+* Name: un atributo de tipo texto con el nombre del pasajero.
+* Sex: un atributo de tipo texto que especifica el género del pasajero. Puede tomar los valores: _male_, _female_.
+* Age: atributo numérico que determina la edad del pasajero. La edad de los bebés por debajo de 12 meses se representa como una fracción del tipo 1/_meses de vida_.
+* Pclass: un atributo de tipo numérico que representa la clase a la que pertenece el pasajero. Existen las clases: _1_, _2_ y _3_
+    
+embarked
+    a factor with the persons place of of embarkment.
+    
+country
+    a factor with the persons home country.
+    
+ticketno
+    a numeric value specifying the persons ticket number (NA for crew members).
+    
+fare
+    a numeric value with the ticket price (NA for crew members, musicians and employees of the shipyard company).
+    
+sibsp
+    an ordered factor specifying the number if siblings/spouses aboard; adopted from Vanderbild data set.
+    
+parch
+    an ordered factor specifying the number of parents/children aboard; adopted from Vanderbild data set.
+    
+survived
+    a factor with two levels (no and yes) specifying whether the person has survived the sinking.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#Estadísticas básicas
+summary(train)
+
+# Estadísticas de valores vacíos
+colSums(is.na(train))
+colSums(train=="")
+
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Tomamos valor "Desconocido" para los valores vacíos de la variable "country"
+train$Embarked[train$country==""]="Desconocido"
+
+# Tomamos la media para valores vacíos de la variable "Age"
+train$Age[is.na(train$age)] <- mean(train$age,na.rm=T)
+```
 
 ## Preparación del dataset.
 

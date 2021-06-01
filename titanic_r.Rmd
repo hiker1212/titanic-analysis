@@ -159,23 +159,72 @@ Una vez definidos los atributos del conjunto, se procede a estudiar superficialm
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 #Estadísticas básicas
 summary(train)
+```
 
+Tras la ejecución de un *summary* se puede observar la naturaleza de los datos y parte de su distribución. Aunque este tipo de resumen puede resultar de gran utilidad, es necesario tener en cuenta que en ciertos casos puede llevar a equívocos puesto que se podría obviar el significado de ciertos atributos, fundamentalmente en aquellos categóricos de tipo numérico.En cambio, en el caso de atributos no categóricos de tipo numérico se puede extraer información de mayor interés. 
+En este caso se observa que el precio de los billetes es 32.2 de media y se aprecia que el valor máximo se aleja mucho de éste, por lo que podría ser un valor erroneo.
+En cuanto al número de familias viajando en la nave se podría decir que conforman una minoría y que lo más común son viajeros individuales o con un único familiar o pareja.
+La distribución de edad es relativamente baja por lo que se puede suponer que la mayoría de pasajeros son jóvenes (por debajo de 40 años).
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#Previsualizacion de datos
+head(train)
+tail(train)
+```
+
+En ciertas ocasiones, la previsualización de los datos tal y como se han cargado puede ayudar a la identificación de ciertos detalles de los distintos atributos, tanto en cuanto a su significado como en cuanto a los valores que pueden tomar. En este caso se puede observar que los tipos de datos y sus valores coinciden con la definición de los atributos aunque salen a la luz otro factores como:
+
+* Existencia de valores no numéricos para el atributo *Age*.
+* Valores vacíos en el atributo no numérico *Cabin*
+
+Aunque este método aporta cierta luz sobre los datos, no es suficiente, y por ello se deben llevar a cabo otras tareas para la correcta comprensión del conjunto de datos.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 # Estadísticas de valores vacíos
 colSums(is.na(train))
 colSums(train=="")
-
 ```
 
-
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Tomamos valor "Desconocido" para los valores vacíos de la variable "country"
-train$Embarked[train$country==""]="Desconocido"
-
-# Tomamos la media para valores vacíos de la variable "Age"
-train$Age[is.na(train$age)] <- mean(train$age,na.rm=T)
-```
+Aparentemente, en el conjunto existe una alta cantidad de valores inválidos para el atributo *Age*, teniendo en cuenta que el conjunto cuenta con 891 registros. En cuanto a las cabinas se puede suponer que no todos los pasajeros contaban con una propia y por ello ese campo aparece vacío ya que la mayoría de pasajeros se encuentran con esta carencia. Sin embargo, en cuanto al atributo *Embarked* si que podemos concluir en que existen 2 registros que no fueron tomados y por lo tanto el conjunto de datos carece de dicha información.
 
 ## Preparación del dataset.
+
+Tras las observaciones llevadas a cabo en el apartado anterior se realizarán ciertas tareas y acciones sobre el conjunto de datos en vistas a facilitar y mejorar los resultados del futuro análisis.
+
+### Tratamiento de valores nulos o vacíos.
+
+En cuanto a los valores no numéricos encontrados para el atributo *Age*, dado que su eliminación sería una pérdida significativa para los análisis posteriores, se lleva a cabo la sustitucion de estos valores inválidos por el valor medio del atributo.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Tomamos la media para valores vacíos de la variable "Age"
+train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
+```
+
+Tratándose del atributo *Embarked*, como se ha mostrado anteriormente solo existen 2 registros vacíos con lo que se puede eliminar perfectamente la información de estos pasajeros.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Se eliminan las filas co
+train <- train[train$Embarked!="",]
+```
+
+En cuanto al atributo *Cabin* dada la suposición antes mencionada se considera que es un valor válido que implica la carencia de un camarote por lo que se procede a asignar un valor más representativo como podría ser "Sin camarote".
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Tomamos la media para valores vacíos de la variable "Age"
+train$Cabin[train$Cabin == ""] <- "Sin camarote"
+```
+
+### Discretización de variables.
+
+Para el caso del atributo de edad será mas interesante tratarlo como si fuese una categoría por lo que se lleva a cabo una discretización que resultará en la existencia de 8 rangos de edad.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Se discretiza Age
+train$Age <- cut(train$Age, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 100), labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-80"))
+# Se previsualizan los datos
+head(train)
+```
+
 
 ## Análisis de los datos.
 

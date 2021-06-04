@@ -25,7 +25,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,  message=FALSE, warning=FALSE)
 ```
 
 
@@ -119,26 +119,24 @@ Para el desarrollo de la práctica 2 de **Tipología y ciclo de vida de los dato
 
 Se procede a llevar a cabo la carga de datos de **train.csv** y almacenarlos en forma de dataframe.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r Imports}
 # Cargamos los paquetes R que vamos a usar
 library(ggplot2)
 library(dplyr)
+library(gridExtra)
+library(ggcorrplot)
+library(GGally)
+```
 
+
+```{r Carga}
 # Cargamos el fichero de datos
-train <- read.csv('train.csv',stringsAsFactors = FALSE)
+train <- read.csv('train.csv', stringsAsFactors = FALSE)
 # Verificamos la estructura del conjunto de datos
 str(train)
 ```
 
 ## Descripción del dataset.
-
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Comprobamos los distintos valores de los atributos que parecen ser categóricos
-unique(train$Pclass)
-unique(train$Survived)
-unique(train$Sex)
-unique(train$Embarked)
-```
 
 En este apartado se tratará de llevar a cabo una descripción detallada del conjunto de datos, con lo que se definirán los atributos del mismo, las proporciones y posibles valores de los mismos e información relevante para procesos posteriores. En primer lugar, los atributos del conjunto de datos:
 
@@ -156,7 +154,15 @@ En este apartado se tratará de llevar a cabo una descripción detallada del con
 
 Una vez definidos los atributos del conjunto, se procede a estudiar superficialmente los datos de modo que se puedan detectar ciertas tendencias o naturalezas.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r Únicos}
+# Comprobamos los distintos valores de los atributos que parecen ser categóricos
+unique(train$Survived)
+unique(train$Pclass)
+unique(train$Sex)
+unique(train$Embarked)
+```
+
+```{r Estadísticas}
 #Estadísticas básicas
 summary(train)
 ```
@@ -166,7 +172,7 @@ En este caso se observa que el precio de los billetes es 32.2 de media y se apre
 En cuanto al número de familias viajando en la nave se podría decir que conforman una minoría y que lo más común son viajeros individuales o con un único familiar o pareja.
 La distribución de edad es relativamente baja por lo que se puede suponer que la mayoría de pasajeros son jóvenes (por debajo de 40 años).
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r}
 #Previsualizacion de datos
 head(train)
 tail(train)
@@ -179,7 +185,7 @@ En ciertas ocasiones, la previsualización de los datos tal y como se han cargad
 
 Aunque este método aporta cierta luz sobre los datos, no es suficiente, y por ello se deben llevar a cabo otras tareas para la correcta comprensión del conjunto de datos.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r}
 # Estadísticas de valores vacíos
 colSums(is.na(train))
 colSums(train=="")
@@ -195,22 +201,22 @@ Tras las observaciones llevadas a cabo en el apartado anterior se realizarán ci
 
 En cuanto a los valores no numéricos encontrados para el atributo *Age*, dado que su eliminación sería una pérdida significativa para los análisis posteriores, se lleva a cabo la sustitucion de estos valores inválidos por el valor medio del atributo.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r}
 # Tomamos la media para valores vacíos de la variable "Age"
 train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
 ```
 
 Tratándose del atributo *Embarked*, como se ha mostrado anteriormente solo existen 2 registros vacíos con lo que se puede eliminar perfectamente la información de estos pasajeros.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r}
 # Se eliminan las filas co
 train <- train[train$Embarked!="",]
 ```
 
 En cuanto al atributo *Cabin* dada la suposición antes mencionada se considera que es un valor válido que implica la carencia de un camarote por lo que se procede a asignar un valor más representativo como podría ser "Sin camarote".
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-# Tomamos la media para valores vacíos de la variable "Age"
+```{r}
+# Asignamos un valor significativo a los registros sin camarote
 train$Cabin[train$Cabin == ""] <- "Sin camarote"
 ```
 
@@ -218,15 +224,256 @@ train$Cabin[train$Cabin == ""] <- "Sin camarote"
 
 Para el caso del atributo de edad será mas interesante tratarlo como si fuese una categoría por lo que se lleva a cabo una discretización que resultará en la existencia de 8 rangos de edad.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r, eval=FALSE}
 # Se discretiza Age
 train$Age <- cut(train$Age, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 100), labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-80"))
 # Se previsualizan los datos
 head(train)
 ```
 
+### Factorización de variables
+Cambiamos el tipo de los atributos que lo necesitan a factor
+
+```{r}
+# Transformación
+train$Survived <- as.factor(train$Survived)
+train$Pclass <- as.factor(train$Pclass)
+train$Sex <- as.factor(train$Sex)
+train$Embarked <- as.factor(train$Embarked)
+```
+
+
 
 ## Análisis de los datos.
+
+### Selección de los grupos de datos que se quieren analizar
+A continuación, se seleccionan los subconjuntos de datos que pueden resultar interesante para analizar:
+
+```{r}
+# agrupación por supervivencia
+train.vive <- train[train$Survived == 1, ]
+train.muere <- train[train$Survived == 0, ]
+
+# agrupación por clase
+train.primera <- train[train$Pclass == 1, ]
+train.segunda <- train[train$Pclass == 2, ]
+train.tercera <- train[train$Pclass == 3, ]
+
+# agrupación por género
+train.hombre <- train[train$Sex == "male", ]
+train.mujer <- train[train$Sex == "female", ]
+
+# agrupación por rango de edad
+train.r1 <- train[train$Age == "0-9", ]
+train.r2 <- train[train$Age == "10-19", ]
+train.r3 <- train[train$Age == "20-29", ]
+train.r4 <- train[train$Age == "30-39", ]
+train.r5 <- train[train$Age == "40-49", ]
+train.r6 <- train[train$Age == "50-59", ]
+train.r7 <- train[train$Age == "60-69", ]
+train.r8 <- train[train$Age == "70-80", ]
+
+
+# agrupación por puerto de embarque
+train.pc <- train[train$Embarked == "C", ]
+train.pq <- train[train$Embarked == "Q", ]
+train.ps <- train[train$Embarked == "S", ]
+
+```
+
+
+### Comprobación de la normalidad y homogeneidad de la varianza
+
+***
+http://www.sthda.com/english/wiki/normality-test-in-r
+
+Visual inspection, described in the previous section, is usually unreliable. It’s possible to use a significance test comparing the sample distribution to a normal one in order to ascertain whether data show or not a serious deviation from normality.
+
+There are several methods for normality test such as Kolmogorov-Smirnov (K-S) normality test and Shapiro-Wilk’s test.
+
+The null hypothesis of these tests is that “sample distribution is normal”. If the test is significant, the distribution is non-normal.
+
+Shapiro-Wilk’s method is widely recommended for normality test and it provides better power than K-S. It is based on the correlation between the data and the corresponding normal scores.
+
+Note that, normality test is sensitive to sample size. Small samples most often pass normality tests. Therefore, it’s important to combine visual inspection and significance test in order to take the right decision.
+
+The R function shapiro.test() can be used to perform the Shapiro-Wilk test of normality for one variable (univariate):
+***
+
+```{r}
+shapiro.test(as.numeric(train$Pclass))
+```
+
+```{r}
+shapiro.test(train$Age)
+```
+
+
+```{r}
+shapiro.test(train$Fare)
+```
+
+...Las variables numéricas (Age antes de discretizarlo) siguen una distribución normal...
+
+
+### Aplicación de pruebas estadísticas para comparar los grupos de datos
+
+
+
+
+Nos proponemos analizar las relaciones entre las diferentes variables del conjunto de datos para ver si se relacionan y como. Empezamos con las variables categóricas y su relación con Survived
+
+```{r, fig.width=10}
+# Visualizamos la relación entre las variables:
+g1 <- ggplot(data=train, aes(x=Pclass, fill = Survived)) +
+  geom_bar(position = "stack") +
+  theme_minimal()
+
+g2 <- ggplot(data=train, aes(x=Sex, fill = Survived)) +
+  geom_bar(position = "stack") +
+  theme_minimal()
+
+
+g3 <- ggplot(data=train, aes(x=Age, fill = Survived)) +
+  geom_bar(position = "stack") +
+  theme_minimal()
+
+g4 <- ggplot(data=train, aes(x=Embarked, fill = Survived)) +
+  geom_bar(position = "stack") +
+  theme_minimal()
+
+grid.arrange(g1, g2, g3, g4, nrow = 2, ncol = 2)
+
+"
+código para estructura de gráficos
+ggpairs(train,
+        columns = c('Pclass', 'Sex', 'Embarked'),
+        aes(color = Survived),
+        #axisLabels='internal'
+        upper  = list(discrete = 'blank')
+        ) +
+  theme_minimal()
+"
+
+```
+
+
+```{r, fig.width=10}
+# Visualizamos la relación entre las variables, pero como porcentaje:
+g1 <- ggplot(data=train, aes(x=Pclass, fill = Survived)) +
+  geom_bar(position = "fill") +
+  theme_minimal()
+
+g2 <- ggplot(data=train, aes(x=Sex, fill = Survived)) +
+  geom_bar(position = "fill") +
+  theme_minimal()
+
+
+g3 <- ggplot(data=train, aes(x=Age, fill = Survived)) +
+  geom_bar(position = "fill") +
+  theme_minimal()
+
+g4 <- ggplot(data=train, aes(x=Embarked, fill = Survived)) +
+  geom_bar(position = "fill") +
+  theme_minimal()
+
+grid.arrange(g1, g2, g3, g4, nrow = 2, ncol = 2)
+
+```
+
+Con estos 4 pares de visaualizaciones podemos llegar a los siguientes razonamientos:
+
+* A pesar de que el número de pasajeros de la clase 3 es muy superior, en porcentaje es más bajo que los de la clase 1 y 2.
+* Ocurre algo parecido con el género, a pesar de haber menos mujeres, el porcentaje de supervivencia es muy superior, parece que se le dio preferencia a las mujeres a la hora de embarcar en los botes salvavidas.
+* Del mismo, llegamos a la conclusión de preferencia para los niños menores de 10 años, a partir de esta edad, el porcentaje se estabiliza hasta llegar a la decada de los 60 y 70 años, donde el porcentaje de supervivientes disminuye de manera significativa. Esto implicaría que se priorizó a las personas más jóvenes frente a las de edad avanzada.
+* Respecto a la variable Embarked, solo podemos observar que el número de pasajeros que embarcó en Southampton es mucho mayor que el resto, sin embargo, el porcentaje de supervivientes es menor. Se podría trabajar el puerto C (Cherburgo) para intentar explicar la diferencia en los datos. Quizás, porcentualmente embarcaron más mujeres, niños o gente de primera clase
+
+Obtenemos ahora una matriz de porcentajes de frecuencia.
+Vemos, por ejemplo que la probabilidad de sobrevivir si se embarcó en "C" es de un 55.36%
+
+```{r}
+t<-table(train$Embarked,train$Survived)
+for (i in 1:dim(t)[1]){
+    t[i,]<-t[i,]/sum(t[i,])*100
+}
+t
+```
+
+
+A continuación, se muestran visualizaciones que relacionan las variables categóricas entre sí, sin tener en cuenta la superviviencia. De esta manera buscaremos correlaciones de una manera muy visual.
+```{r, fig.height=8, fig.width=10}
+# Observamos las posibles relaciones entre las variables categóricas
+g1 <- ggplot(data=train, aes(x=Pclass, y=Sex)) +
+  geom_jitter() +
+  theme_minimal()
+
+g2 <- ggplot(data=train, aes(x=Pclass, y=Embarked)) +
+  geom_jitter() +
+  theme_minimal()
+
+g3 <- ggplot(data=train, aes(x=Embarked, y=Sex)) +
+  geom_jitter() +
+  theme_minimal()
+
+grid.arrange(g1, g2, g3, nrow = 2, ncol = 2)
+```
+
+Con estos tres gráficos se llega a las siguientes conclusiones:
+
+* La distribución de mujeres en las diferentes clases es mucho más homogénea que la de hombres, que se concentran en la tercera clase.
+* En la gráfica que relaciona el puerto de embarque con la clase observamos que proporcionalmente, los embarque de primera clase en el puerto C son mayores, por ello, junto con la gráfica porcentaje de supervivencia respecto a la clase, no se sobrevive más por embarcar en C, sino por ser de primera clase. Mostramos la tabla de probabilidades que nos ayuda a verlo numéricamente.
+
+
+```{r}
+t<-table(train$Embarked,train$Pclass)
+for (i in 1:dim(t)[1]){
+    t[i,]<-t[i,]/sum(t[i,])*100
+}
+t
+```
+
+* El último gráfico relaciona el género con el puerto de embarque. Observamos que la mayoría de registros se encuentra en masculino-S, esto, junto con el resto de gráficos, nos ayuda a comprender que el puerto S es donde embarcaron más personas de 3ª clase, que en su mayoría son hombres.
+
+
+Veamos ahora como en un mismo gráfico de frecuencias podemos trabajar con 3 variables: Embarked, Survived y Pclass.  
+
+```{r}
+# Ahora, podemos dividir el gráfico de Embarked por Pclass:
+ggplot(data = train,aes(x=Embarked,fill=Survived)) +
+  geom_bar(position="fill") +
+  facet_wrap(~Pclass) +
+  theme_minimal()
+```
+
+Esta visualzación nos ayuda a comprender que la probabilidad de supervivencia está más relacionada con la clase que con el lugar de embarque.
+
+Comparemos ahora dos gráficos de frecuencias: Survived-SibSp y Survived-Parch
+
+```{r}
+# Survivial como función de SibSp y Parch
+ggplot(data = train,aes(x=SibSp,fill=Survived)) +
+  geom_bar() +
+  theme_minimal()
+
+ggplot(data = train,aes(x=Parch,fill=Survived)) +
+  geom_bar() +
+  theme_minimal()
+```
+
+Observamos como las forma de estos dos gráficos es similar. Este hecho nos puede indicar presencia de correlaciones altas y que la mayoría de personsas viajaron sin familia.
+
+
+Veamos un ejemplo de construcción de una variable nueva: Tamaño de familia
+
+```{r}
+# Construimos un atributo nuevo: family size.
+train$FamilySize <- train$SibSp + train$Parch +1;
+train1<-train
+ggplot(data = train1[!is.na(train$FamilySize),],aes(x=FamilySize,fill=Survived)) +
+  geom_histogram(binwidth =1,position="fill") +
+  ylab("Frecuencia") +
+  theme_minimal()
+```
 
 ## Conclusiones.
 

@@ -128,6 +128,7 @@ library(ggcorrplot)
 library(GGally)
 library(ggpubr)
 library(broom)
+library(pROC)
 ```
 
 
@@ -226,9 +227,9 @@ train$Cabin[train$Cabin == ""] <- "Sin camarote"
 
 Para el caso del atributo de edad será mas interesante tratarlo como si fuese una categoría por lo que se lleva a cabo una discretización que resultará en la existencia de 8 rangos de edad.
 
-```{r, eval=FALSE}
-# Se discretiza Age
-train$Age <- cut(train$Age, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 100), labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-80"))
+```{r}
+# se crea nueva variable discretizando Age
+train$Age.disc <- cut(train$Age, breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 100), labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-80"))
 # Se previsualizan los datos
 head(train)
 ```
@@ -249,59 +250,29 @@ train$Embarked <- as.factor(train$Embarked)
 ## 4. Análisis de los datos.
 
 ### 4.1. Selección de los grupos de datos que se quieren analizar
-A continuación, se seleccionan los subconjuntos de datos que pueden resultar interesante para analizar:
+Para el análisis de datos se van a utilizar las siguientes variables, que agrupan los datos según su valor:
 
-```{r}
-# agrupación por supervivencia
-train.vive <- train[train$Survived == 1, ]
-train.muere <- train[train$Survived == 0, ]
-
-# agrupación por clase
-train.primera <- train[train$Pclass == 1, ]
-train.segunda <- train[train$Pclass == 2, ]
-train.tercera <- train[train$Pclass == 3, ]
-
-# agrupación por género
-train.hombre <- train[train$Sex == "male", ]
-train.mujer <- train[train$Sex == "female", ]
-
-# agrupación por rango de edad
-train.r1 <- train[train$Age == "0-9", ]
-train.r2 <- train[train$Age == "10-19", ]
-train.r3 <- train[train$Age == "20-29", ]
-train.r4 <- train[train$Age == "30-39", ]
-train.r5 <- train[train$Age == "40-49", ]
-train.r6 <- train[train$Age == "50-59", ]
-train.r7 <- train[train$Age == "60-69", ]
-train.r8 <- train[train$Age == "70-80", ]
-
-
-# agrupación por puerto de embarque
-train.pc <- train[train$Embarked == "C", ]
-train.pq <- train[train$Embarked == "Q", ]
-train.ps <- train[train$Embarked == "S", ]
-
-```
+* Survived: el pasajero sobrevive o no.
+* Pclas: clase en la que viaja el pasajero.
+* Sex: género del pasajero.
+* Embarked: puerto por el que embarca el pasajero
 
 
 ### 4.2. Comprobación de la normalidad y homogeneidad de la varianza
 
 **Normalidad**
-***
-http://www.sthda.com/english/wiki/normality-test-in-r
+Podemos utilizar test de significancia para comparar las distribuciones de las variables con la distribución normal. Para ello vamos a utilizar el test de Shapiro-Wilk. Es considera uno de los test más potentes para el contraste de normalidad. 
 
-Visual inspection, described in the previous section, is usually unreliable. It’s possible to use a significance test comparing the sample distribution to a normal one in order to ascertain whether data show or not a serious deviation from normality.
+Las hipótesis son las siguientes:
 
-There are several methods for normality test such as Kolmogorov-Smirnov (K-S) normality test and Shapiro-Wilk’s test.
-
-The null hypothesis of these tests is that “sample distribution is normal”. If the test is significant, the distribution is non-normal.
-
-Shapiro-Wilk’s method is widely recommended for normality test and it provides better power than K-S. It is based on the correlation between the data and the corresponding normal scores.
-
-Note that, normality test is sensitive to sample size. Small samples most often pass normality tests. Therefore, it’s important to combine visual inspection and significance test in order to take the right decision.
-
-The R function shapiro.test() can be used to perform the Shapiro-Wilk test of normality for one variable (univariate):
-***
+  $$
+\left\{
+\begin{array}{ll}
+Hipótesis&nula&H_{0}: &  distribución&normal\\
+Hipótesis&alternativa&H_{1}: & distribución&no&normal
+\end{array}
+\right.
+ $$
 
 ***
 creo que no tiene mucho sentido comprobar la normalidad de Pclass, pero lo vemos juntos
@@ -383,7 +354,7 @@ Puesto que obtenemos un p-valor inferior a 0,05, aceptamos la hipótesis alterna
 Ahora vamos a comprobar el resultado gráficamente.
 
 ```{r}
-#☻ modelo regresión lineal
+# modelo regresión lineal
 model <- lm(Fare ~ Age, data = train)
 model
 ```
@@ -416,10 +387,113 @@ Este gráfico nos muestra si los valores residuales están distribuidos igualmen
 
 ### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos
 
-TODO
-***
+Ahora, pasamos a comparar los supervivientes con los grupos de creados por las distitnas variables. Para ello vamos a utilizar el modelo de regresión ligística, teniendo como variable dependiente Survived.
 
+**Supervivientes - primera clase**
+```{r}
+# nueva variable para saber si es primera clase o no
+train$primera <- ifelse(train$Pclass == 1,1,0)
+```
+
+
+```{r}
+# frecuencias absolutas
+primera.tab <- table(train$Survived, train$primera)
+primera.tab_M <- addmargins(primera.tab, FUN = list(Total = sum), quiet = TRUE)
+primera.tab_M
+```
+
+Creamos el primer modelo con la nueva variable que nos dice si el pasajero viaja en primera o no:
+```{r glm1}
+# modelo regresión logística
+logit_model_1 <- glm(formula=Survived~primera, data=train, family=binomial)
+summary(logit_model_1)
+```
+
+```{r}
+# coeficientes
+exp(coefficients(logit_model_1))
+```
+
+Observamos que ir en primera clase es un factor significativo para la supervivencia, además, como el coeficiente es positivo, indica que que si se viaja en primera, existen más posibilidades de sobrevivir.
+
+Viajar en primera, con una OR de 3.81 implica que las odds (razón de probabilidad) de sobrevivir es 3.81 veces mayor que no viajar en primera.
+
+**Supervivientes - primera clase + género**
+```{r}
+# nueva variable para saber si es mujer o no
+train$genero <- ifelse(train$Sex == "female",1,0)
+```
+
+```{r glm2}
+# modelo regresión logística
+logit_model_2 <- glm(formula=Survived~primera+genero, data=train, family=binomial)
+summary(logit_model_2)
+```
+
+```{r}
+# coeficientes
+exp(coefficients(logit_model_2))
+```
+
+La nueva variable de género, disminuye considerablemente el AIC, por lo que el modelo es significativamente mejor.
+
+Ahora, viajar en primera implica que las odds de sebrevivir es 4.80 veces mayor que no viajar e primera, y ser mujer implica que las odds de sobrevivir es 13.81 veces mayor de sobrevivir que si eres hombre.
+
+**Supervivientes - primera clase + genero + edad**
+
+Añadimos al modelo la edad de los pasajeros:
+
+```{r glm3}
+logit_model_3 <- glm(formula=Survived~primera+genero+Age, data=train, family=binomial)
+summary(logit_model_3)
+```
+
+
+```{r}
+exp(coefficients(logit_model_3))
+```
+
+En este modelo, ambas variables son significativas, además el AIC es menor, por lo que mejora la calidad. Observando los coeficientes tenemos lo siguiente:
+
+* Viajar en primera implica 6.61 veces más de sobrevivir.
+* Ser mujer implica 13.44 veces más de sobrevivir
+* La edad tiene coeficiente negativo, por lo que a medida que aumente la edad, la probabilidad de sobrevivir es menor. En concreto por cada año que aumente, las odds de sobrevivir es 0.97 veces menor.
+
+**Supervivientes - primera clase + genero + edad + pruerto**
+
+Como último modelo, añadimos el puerto de embarque.
+```{r glm4}
+puerto_Rel=relevel(train$Embarked, ref = 'S')
+logit_model_4 <- glm(formula=Survived~primera+genero+Age+factor(puerto_Rel), data=train, family=binomial)
+summary(logit_model_4)
+```
+
+```{r}
+exp(coefficients(logit_model_4))
+```
+
+Observamos que el AIC no disminuye, y además, ninguno de los dos factores puerto, son significativos respecto al puerto de de referencia "S". Por ello, desechamos este modelo.
+
+**Curva ROC**
+
+Una vez encontrado el mejor modelo, vamos a dibujar la curva ROC y calcular el área bajo la curva para obtener la bondad del modelo.
+
+```{r ROC}
+prob_low=predict(logit_model_3, train, type="response")
+r=roc(train$Survived, prob_low, data=train)
+plot(r)
+```
+```{r}
+auc(r)
+```
+
+Un área bajo la curva de 0.84 implica que el modelo ayuda a predecir la supervivencia.
+
+
+***
 Nos proponemos analizar las relaciones entre las diferentes variables del conjunto de datos para ver si se relacionan y como. Empezamos con las variables categóricas y su relación con Survived
+
 
 ```{r, fig.width=10}
 # Visualizamos la relación entre las variables:
@@ -432,7 +506,7 @@ g2 <- ggplot(data=train, aes(x=Sex, fill = Survived)) +
   theme_minimal()
 
 
-g3 <- ggplot(data=train, aes(x=Age, fill = Survived)) +
+g3 <- ggplot(data=train, aes(x=Age.disc, fill = Survived)) +
   geom_bar(position = "stack") +
   theme_minimal()
 
@@ -467,7 +541,7 @@ g2 <- ggplot(data=train, aes(x=Sex, fill = Survived)) +
   theme_minimal()
 
 
-g3 <- ggplot(data=train, aes(x=Age, fill = Survived)) +
+g3 <- ggplot(data=train, aes(x=Age.disc, fill = Survived)) +
   geom_bar(position = "fill") +
   theme_minimal()
 

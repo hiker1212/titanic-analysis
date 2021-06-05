@@ -126,6 +126,8 @@ library(dplyr)
 library(gridExtra)
 library(ggcorrplot)
 library(GGally)
+library(ggpubr)
+library(broom)
 ```
 
 
@@ -244,9 +246,9 @@ train$Embarked <- as.factor(train$Embarked)
 
 
 
-## Análisis de los datos.
+## 4. Análisis de los datos.
 
-### Selección de los grupos de datos que se quieren analizar
+### 4.1. Selección de los grupos de datos que se quieren analizar
 A continuación, se seleccionan los subconjuntos de datos que pueden resultar interesante para analizar:
 
 ```{r}
@@ -282,8 +284,9 @@ train.ps <- train[train$Embarked == "S", ]
 ```
 
 
-### Comprobación de la normalidad y homogeneidad de la varianza
+### 4.2. Comprobación de la normalidad y homogeneidad de la varianza
 
+**Normalidad**
 ***
 http://www.sthda.com/english/wiki/normality-test-in-r
 
@@ -300,26 +303,121 @@ Note that, normality test is sensitive to sample size. Small samples most often 
 The R function shapiro.test() can be used to perform the Shapiro-Wilk test of normality for one variable (univariate):
 ***
 
+***
+creo que no tiene mucho sentido comprobar la normalidad de Pclass, pero lo vemos juntos
+***
+
+
 ```{r}
 shapiro.test(as.numeric(train$Pclass))
 ```
+
+alpha menor que 0.05, no normal
+
+```{r}
+# gráfico de denisdad
+ggdensity(as.numeric(train$Pclass), 
+          main = "Gráfico densisdad de Pclass",
+          xlab = "Pclass")
+```
+
+```{r}
+# q-q plot
+ggqqplot(as.numeric(train$Pclass))
+```
+
 
 ```{r}
 shapiro.test(train$Age)
 ```
 
+alpha menor que 0.05, no normal
+
+```{r}
+# gráfico de denisdad
+ggdensity(train$Age, 
+          main = "Gráfico densisdad de Edad",
+          xlab = "Age")
+```
+
+
+```{r}
+# q-q plot
+ggqqplot(train$Age)
+```
 
 ```{r}
 shapiro.test(train$Fare)
 ```
 
-...Las variables numéricas (Age antes de discretizarlo) siguen una distribución normal...
+alpha menor que 0.05, no normal
+
+```{r}
+# gráfico de denisdad
+ggdensity(train$Fare, 
+          main = "Gráfico densisdad de Precio",
+          xlab = "Fare")
+```
+
+Probablemente cambie cuando quitemos los valores atípicos
+
+```{r}
+# q-q plot
+ggqqplot(train$Fare)
+```
+
+...Las variables numéricas (Age antes de discretizarlo) no siguen una distribución normal...
+
+**Homogeneidad de la varianza**
+
+Test de Fligner-Killeen
+
+Se trata de un test no paramétrico que compara las varianzas basándose en la mediana. Es también una alternativa cuando no se cumple la condición de normalidad en las muestras, como es nuestro caso. Considera como hipótesis nula que la varianza es igual entre los grupos y como hipótesis alternativa que no lo es.
+
+```{r}
+fligner.test(Fare ~ Age, data = train)
+```
+
+Puesto que obtenemos un p-valor inferior a 0,05, aceptamos la hipótesis alternativa, las varianzas de ambas muestras no son homogéneas.
+
+Ahora vamos a comprobar el resultado gráficamente.
+
+```{r}
+#☻ modelo regresión lineal
+model <- lm(Fare ~ Age, data = train)
+model
+```
 
 
-### Aplicación de pruebas estadísticas para comparar los grupos de datos
+```{r}
+# obtenemos las métricas
+model.diag.metrics <- augment(model)
+head(model.diag.metrics)
+```
 
 
+```{r}
+# mostramos el gráfico
+ggplot(model.diag.metrics, aes(Age, Fare)) +
+  geom_point() +
+  stat_smooth(method = lm, se = FALSE) +
+  geom_segment(aes(xend = Age, yend = .fitted), color = "red", size = 0.3) +
+  theme_minimal()
+```
 
+Podemos comprobar la homocedasticidad examinando el gáfico *scale-location plot*
+
+```{r}
+plot(model, 3)
+```
+
+Este gráfico nos muestra si los valores residuales están distribuidos igualmente a lo largo del rango del predictor. La línea contiene una curva al principio, aunque después es horizontal, pero los puntos no se distribuyen homogénamente a ambos lados de la línea, podemos asumir que no existe homocedasticidad. Llegamos a la misma conclusión que el test de Fligner-Killeen
+
+
+### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos
+
+TODO
+***
 
 Nos proponemos analizar las relaciones entre las diferentes variables del conjunto de datos para ver si se relacionan y como. Empezamos con las variables categóricas y su relación con Survived
 
@@ -476,4 +574,15 @@ ggplot(data = train1[!is.na(train$FamilySize),],aes(x=FamilySize,fill=Survived))
 ```
 
 ## Conclusiones.
+
+
+
+
+| Contribuciones             | Firma   |
+|:-:                         |:-:      |
+|Investigación previa        |XPP, DSR |
+|Redacción de las respuestas |XPP, DSR |
+|Desarrollo de código   | XPP, DSR  |
+
+
 

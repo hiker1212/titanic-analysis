@@ -245,11 +245,46 @@ train$Sex <- as.factor(train$Sex)
 train$Embarked <- as.factor(train$Embarked)
 ```
 
+### Valores extremos.
 
+Como hemos observado previamente es probable que existan valores atípicos en los extremos de la variable *Fair* (outliers). En caso de llevar a cabo un estudio que tenga en cuenta el precio del billete, estos valores podrían afectar a las conclusiones, por lo que deben ser tratados.
 
-## 4. Análisis de los datos.
+```{r}
+# Muestra de outliers
+boxplot.stats(train$Fare)
+out <- boxplot.stats(train$Fare)$out
+min(out)
+max(out)
+length(out)
+boxplot(train$Fare)
+```
 
-### 4.1. Selección de los grupos de datos que se quieren analizar
+Como se puede observar tanto en el diagrama de caja, los valores que se encuentran entre 66.6 y 512.3292 son anómalos y se encuentran a demasiada distancia del resto de datos del conjunto. Aunque es cierto que el precio de los billetes en un crucero puede variar en función de los servicios contratados y la fecha de adquisición, en este caso se sustituirán todos estos valores por el valor medio del conjunto.
+
+```{r}
+# Tomamos la media para valores vacíos de la variable "Fare"
+train$Fare[train$Fare >= min(out)] <- mean(train$Fare,na.rm=T)
+```
+
+Una vez sustituidos los valores anómalos se vuelve a comprobar la distribución de este atributo en un diagrama de caja y se puede ver que dicjos valores han desaparecido
+
+```{r}
+# Imprimimos boxplot
+boxplot(train$Fare)
+```
+### Eliminación de atributos prescindibles
+
+En este conjunto de datos existen ciertos atributos que no representan ningún interés para los posibles estudios a realizar. Los datos relativos al nombre de los pasajeros y su identificador en el conjunto no aportan ningún valor, y por ello estas columnas serán desechar.
+
+```{r}
+# Drop columns
+train <- subset(train, select = -c(Name, PassengerId))
+```
+
+## Análisis de los datos.
+A continuación se llevará a cabo un estudio en profundidad del conjunto de datos, las distintas distribuciones de sus atributos y el efecto de unos atributos en los demás.
+
+### Selección de los grupos de datos que se quieren analizar
 Para el análisis de datos se van a utilizar las siguientes variables, que agrupan los datos según su valor:
 
 * Survived: el pasajero sobrevive o no.
@@ -258,10 +293,10 @@ Para el análisis de datos se van a utilizar las siguientes variables, que agrup
 * Embarked: puerto por el que embarca el pasajero
 
 
-### 4.2. Comprobación de la normalidad y homogeneidad de la varianza
+### Comprobación de la normalidad y homogeneidad de la varianza
 
-**Normalidad**
-Podemos utilizar test de significancia para comparar las distribuciones de las variables con la distribución normal. Para ello vamos a utilizar el test de Shapiro-Wilk. Es considera uno de los test más potentes para el contraste de normalidad. 
+**Normalidad**: 
+Podemos utilizar test de significancia para comparar las distribuciones de las variables con la distribución normal. Para ello vamos a utilizar el test de Shapiro-Wilk. Es considerado uno de los test más potentes para el contraste de normalidad. 
 
 Las hipótesis son las siguientes:
 
@@ -274,9 +309,7 @@ Hipótesis&alternativa&H_{1}: & distribución&no&normal
 \right.
  $$
 
-***
 creo que no tiene mucho sentido comprobar la normalidad de Pclass, pero lo vemos juntos
-***
 
 
 ```{r}
@@ -329,8 +362,6 @@ ggdensity(train$Fare,
           main = "Gráfico densisdad de Precio",
           xlab = "Fare")
 ```
-
-Probablemente cambie cuando quitemos los valores atípicos
 
 ```{r}
 # q-q plot
@@ -385,7 +416,7 @@ plot(model, 3)
 Este gráfico nos muestra si los valores residuales están distribuidos igualmente a lo largo del rango del predictor. La línea contiene una curva al principio, aunque después es horizontal, pero los puntos no se distribuyen homogénamente a ambos lados de la línea, podemos asumir que no existe homocedasticidad. Llegamos a la misma conclusión que el test de Fligner-Killeen
 
 
-### 4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos
+### Aplicación de pruebas estadísticas para comparar los grupos de datos
 
 Ahora, pasamos a comparar los supervivientes con los grupos de creados por las distitnas variables. Para ello vamos a utilizar el modelo de regresión ligística, teniendo como variable dependiente Survived.
 
@@ -515,17 +546,6 @@ g4 <- ggplot(data=train, aes(x=Embarked, fill = Survived)) +
   theme_minimal()
 
 grid.arrange(g1, g2, g3, g4, nrow = 2, ncol = 2)
-
-"
-código para estructura de gráficos
-ggpairs(train,
-        columns = c('Pclass', 'Sex', 'Embarked'),
-        aes(color = Survived),
-        #axisLabels='internal'
-        upper  = list(discrete = 'blank')
-        ) +
-  theme_minimal()
-"
 
 ```
 

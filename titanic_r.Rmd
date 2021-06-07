@@ -3,6 +3,9 @@ title: 'Práctica 2: Limpieza y análisis de datos '
 author: "Autores: Xián Pérez Pérez y Daniel Santos Rivilla"
 date: "Junio 2021"
 output:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
   html_document:
     highlight: default
     number_sections: yes
@@ -11,9 +14,6 @@ output:
     toc_depth: 2
     includes:
       in_header: tipo-header.html
-  pdf_document:
-    highlight: zenburn
-    toc: yes
   word_document: default
 ---
 
@@ -114,6 +114,7 @@ Este documento de entrega final de la Práctica 2 se debe entregar en el espacio
 ## Introducción.
 
 Para el desarrollo de la práctica 2 de **Tipología y ciclo de vida de los datos** se ha seleccionado el dataset de Titanic expuesto en kaggle. Este dataset consta de dos ficheros .csv (test y train) en los que se encuentra recogida la información a cerca de los pasajeros del célebre crucero. Esta separación inicial está fundamentada por su objetivo de aplicar un modelo de predicción para determinar los supervivientes del accidente, de modo que uno de los conjuntos se emplee para el entrenamiento del modelo y el otro para ponerlo a prueba. Para nuestro estudio emplearemos el conjunto de entrenamiento **train** puesto que es el que cuenta con la información relativa a la supervivencia de los pasajeros.
+Se trata de un conjunto de datos que refieren al accidente sufrido por el transatlántico *Titanic* que terminó hundiéndose al colisionar con un iceberg. El conjunto de datos es un resumen de los pasajeros de la nave junto con el desenlace de la tragedia para cada uno, es decir si ha sobrevivido o no. Gracias a este conjunto de datos se puede llevar a cabo un estudio para determinar qué factores influyen en la supervivencia de los pasajeros de un navío de este tipo, de modo que se puedan fortalecer las medidas de seguridad para minimizar las perdidas o simplemente orientar a los compradores de billetes a la hora de seleccionar la configuración de su viaje. 
 
 ## Carga de datos.
 
@@ -669,8 +670,18 @@ ggplot(data = train1[!is.na(train$FamilySize),],aes(x=FamilySize,fill=Survived))
 
 ## Conclusiones.
 
+Como se ha podido observar gracias al análisis existen ciertos factores que pueden potenciar la supervivencia de los pasajeros, de modo que:
+
+* Las mujeres y los niños tienen una tasa de supervivencia mucho más alta, lo cual puede corroborar que en un accidente de este tipo son los primeros en tener acceso a las balsas salvavidas.
+
+* La clase en la que viaja el individuo influye de modo que, cuanto más alta sea mayores serán las probabilidades de sobrevivir.
+
+* La zona de embarque no parece influir directamente en la supervivencia aunque podría dar lugar a dudas puesto que el acceso al barco de las distintas clases de pasajeros no se encuentra distribuido de forma uniforme.
+
+La información proporcionada en el conjunto de datos es de gran utilidad a la hora de determinar los factores de supervivencia en un accidente de este tipo aunque probablemente podrían existir otros que no se recogen, como podrían ser: eventos activos durante el accidente, posición de las salidas de emergencia con respecto a la localización de los pasajeros...
 
 
+## Tabla de contribuciones
 
 | Contribuciones             | Firma   |
 |:-:                         |:-:      |
